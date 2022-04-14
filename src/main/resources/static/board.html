@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta property="og:title" content="나만의 로그 OwnLog">
+    <meta property="og:description" content="나의 글을 작성하는 곳, 당신의 글을 적어보세요.">
+    <meta property="og:image" content="images/logo.png">
+
+    <link rel="stylesheet" href="style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script type="application/javascript">
+        const url = new URL(window.location.href);
+        const id = url.searchParams.get('id');
+        // document.write(id);
+        $.ajax({
+            type: 'GET',
+            url: `/board/${id}`,
+            success: function (response){
+                // console.log(response);
+                let html = `<div class="title">
+                                ${response.title}
+                            </div>
+                            <div class="nameDate">
+                                <span>${response.name}</span> ${response.dateWrite}
+                            </div>
+                            <div class="content" style="white-space:pre;">${response.content}</div>`;
+                $('#post').append(html);
+            }
+        })
+        // 게시글 목록/수정/삭제 버튼
+        function list(){
+            location.href = "/";
+        }
+        function edit(){
+            location.href = "/edit?id="+id;
+        }
+        function remove(){
+            $.ajax({
+                type: 'DELETE',
+                url: `/board/${id}`,
+                success: function (respense){
+                    location.href = "/";
+                }
+            })
+        }
+        // 댓글 수정/삭제 버튼
+        // $(document).on("click",".cEdit",function(event){
+        //     console.log($(this).id);
+        //     var idx = $('.cEdit').index(this);
+        //     cocEditCancelnsole.log('idx'+ idx);
+        //     $('#commentEditArea').show();
+        //     // let name =
+        // })
+        function cEdit(cId) {
+            $(`#oneComment_${cId}`).hide();
+            $(`.cBtn_${cId}`).hide();
+            $(`.cMBtn_${cId}`).hide();
+            $(`.cEditArea_${cId}`).show();
+            // $(`#nameEdit_${cId}`).show();  //부모태그가 none이여서 작동안했음
+        }
+        function cDel(cId) {
+            $.ajax({
+                type: 'DELETE',
+                url: `/comment/${cId}`,
+                success: function (respense){
+                    window.location.href = "/viewPost?id="+id;
+                }
+            })
+        }
+        function cEditSave(cId){
+            let name = $(`#nameEdit_${cId}`).val();
+            let comment = $(`#commentEdit_${cId}`).val();
+
+            if(name.trim().length == 0){
+                alert("이름을 입력해주세요");
+                $(`#nameEdit_${cId}`).focus();
+            }else if(comment.trim().length == 0){
+                alert("내용을 입력해주세요");
+                $(`#commentEdit_${cId}`).focus();
+            }else{
+                let data = {"name": name, "comment": comment}
+                $.ajax({
+                    type: 'PUT',
+                    url: `/comment/${cId}`,
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    success: function (response){
+                        window.location.href = "/viewPost?id="+id;
+                    }
+                })
+            }
+        }
+        function cEditCancel(cId){
+            $(`#oneComment_${cId}`).show();
+            $(`.cMBtn_${cId}`).show();
+            $(`.cEditArea_${cId}`).hide();
+        }
+
+        $(document).ready(function () {
+            // 댓글조회
+            $.ajax({
+                type: 'GET',
+                url: `/commentList/${id}`,
+                success: function (response){
+                    // console.log(response);
+                    for (let i = 0; i < response.length; i++){
+                        let comment = response[i];
+                        // 댓글내용 + 댓글수정 inputBox 포함
+                        let html = `<div class="comment">
+                                        <span id="oneComment_${comment.id}">
+                                            <span class="commentName">${comment.name}</span>
+                                            <span class="commentDate">${comment.dateWrite}</span>
+                                            <span>${comment.comment}</span>
+                                        </span>
+                                        <span id="commentEditArea" class="cEditArea_${comment.id}">
+                                            <label for="name">이름</label>
+                                            <input type="text" id="nameEdit_${comment.id}" name="name" value="${comment.name}" style="width:70px;height:20px;font-size:13px;">
+                                            <label for="comment">내용</label>
+                                            <input type="text" id="commentEdit_${comment.id}" name="comment" value="${comment.comment}" style="width:270px;height:20px;font-size:13px;">
+                                            <button class="cEditSave" onclick="cEditSave(${comment.id});">저장</button>
+                                            <button class="cEditCancel" onclick="cEditCancel(${comment.id});">취소</button>
+                                        </span>
+                                        <div class="commentBtns">
+                                            <button class="commentBtn cEdit cBtn_${comment.id}" onclick='cEdit(${comment.id})'>수정</button>
+                                            <button class="commentBtn cDel cBtn_${comment.id}" onclick='cDel(${comment.id})'>삭제</button>
+                                            <span class="menu cMBtn_${comment.id}"> ≡ </span>
+                                            <span class="close cBtn_${comment.id}"> x </span>
+                                        </div>
+                                    </div>`;
+                        $('#comment-container').append(html);
+                        console.log('append');
+                        //각 댓글의 버튼 - 됨
+                        // $('.commentBtn').hide();
+                        // $('.close').hide();
+                    }
+                }
+            })
+            //각 댓글의 버튼 -> css display none
+            // $('.commentBtn').hide();
+            // $('.close').hide();
+            // document.getElementsByClassName("commentBtn").style.display = "none";
+
+            //댓글입력 태그
+            $('#commentInput').hide();
+            $('#cSave').hide();
+
+            // $('.menu').on('click', function(){
+            $(document).on("click",".menu",function(event){ //append된 애들(동적태그)도 이벤트 적용
+                // class 다 같이 보여지고, 사라지고.. id는 겹치고 -> 형제 요소
+                // $('.commentBtn').show();
+                // $('.close').show();
+                var idx = $('.menu').index(this);
+                $('.menu').eq(idx).siblings("button").show();
+                $('.menu').eq(idx).siblings(".close").show();
+                $('.menu').eq(idx).hide();
+            })
+            $(document).on("click",".close",function(event){
+                // $('.commentBtn').hide();
+                // $('.close').hide();
+                // $(`.menu`).show();  //다른 댓글꺼까지 show->id번호로 할랬더니 파라미터를 안받네
+                $(this).prev().show();
+                $(this).prev().prev().hide();
+                $(this).prev().prev().prev().hide();
+                $(this).hide();
+            })
+            $('#cWrite').on('click', function(){
+                $('#commentInput').show();
+                $('#cCancel').show();
+                $('#cSave').show();
+                $('#cWrite').hide();
+            })
+            $('#cCancel').on('click', function(){
+                $('#name').val('');
+                $('#comment').val('');
+                $('#commentInput').hide();
+                $('#cCancel').hide();
+                $('#cSave').hide();
+                $('#cWrite').show();
+            })
+            $('#cSave').on('click', function(){
+                let name = $('#name').val();
+                let comment = $('#comment').val();
+
+                if(name.trim().length == 0){
+                    alert("이름을 입력해주세요");
+                    $('#name').focus();
+                }else if(comment.trim().length == 0){
+                    alert("내용을 입력해주세요");
+                    $('#comment').focus();
+                }else{
+                    let data = {
+                        "boardId": id,
+                        "name": name,
+                        "comment": comment
+                    }
+                    $.ajax({
+                        type: 'POST',
+                        url: '/comment',
+                        contentType: "application/json",
+                        data: JSON.stringify(data),
+                        success: function (response){
+                            window.location.href = "/viewPost?id="+id;
+                        }
+                    })
+                }
+            })
+
+        })
+    </script>
+    <title>글보기</title>
+</head>
+<body>
+<div class="header">
+    온:Own 로그
+</div>
+<div class="nav">
+    <div class="nav-see active">
+        온로그 글보기
+    </div>
+</div>
+<div id="see-area">
+    <div id="list-container">
+
+        <div class="post" id="post">
+<!--            <div class="title">-->
+<!--                제목입니다.11-->
+<!--            </div>-->
+<!--            <div class="nameDate">-->
+<!--                <span>베리</span> 2022-04-11-->
+<!--            </div>-->
+<!--            <div class="content">-->
+<!--                내용입니다.<br>내용입니다.<br>내용입니다.<br>내용입니다.<br>내용입니다.-->
+<!--            </div>-->
+        </div>
+        <div id="comment-container">
+<!--            <div class="comment">-->
+<!--                <span class="commentName">펭수</span>-->
+<!--                <span class="commentDate">2010-03-03</span>-->
+<!--                <span>내용입니내용입니다내용입니다내용입니다내용입니다내용입니다내용입니다내용입니다내용입니다다.</span>-->
+<!--                <div class="commentBtns">-->
+<!--                    <button class="commentBtn cEdit">수정</button>-->
+<!--                    <button class="commentBtn cDel">삭제</button>-->
+<!--                    <span class="menu"> ≡ </span>-->
+<!--                    <span class="close"> x </span>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--            <div class="comment">-->
+<!--                <span class="commentName">펭수</span>-->
+<!--                <span class="commentDate">2010-03-03</span>-->
+<!--                <span>내용입니내용입니다내용입니다내용입니다내용입니다내용입니다내용입니다내용입니다내용입니다다.</span>-->
+<!--                <span id="commentEditArea">-->
+<!--                    <label for="name">이름</label>-->
+<!--                    <input type="text" id="nameEdit" name="name" style="width:70px;height:20px;font-size:13px;">-->
+<!--                    <label for="comment">내용</label>-->
+<!--                    <input type="text" id="commentEdit" name="comment" style="width:270px;height:20px;font-size:13px;">-->
+<!--                    <button class="cEditSave">저장</button>-->
+<!--                    <button class="cEditCancel">취소</button>-->
+<!--                </span>-->
+<!--                <div class="commentBtns">-->
+<!--                    <button class="commentBtn cEdit">수정</button>-->
+<!--                    <button class="commentBtn cDel">삭제</button>-->
+<!--                    <span class="menu"> ≡ </span>-->
+<!--                    <span class="close"> x </span>-->
+<!--                </div>-->
+<!--            </div>-->
+        </div>
+        <div>
+            <span id="commentInput">
+                <label for="name">이름</label>
+                <input type="text" id="name" name="name" style="width:70px;height:20px;font-size:13px;">
+                <label for="comment">내용</label>
+                <input type="text" id="comment" name="comment" style="width:270px;height:20px;font-size:13px;">
+            </span>
+            <button id="cCancel">취소</button>
+            <button id="cSave">등록</button>
+        </div>
+        <div>
+            <button id="cWrite">댓글쓰기</button>
+        </div>
+
+
+    </div>
+    <button class="write" onclick="list()">목록</button>
+    <button id="edit" onclick="edit()">수정</button>
+    <button id="delete" onclick="remove()">삭제</button>
+</div>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta property="og:title" content="나만의 로그 OwnLog">
+    <meta property="og:description" content="나의 글을 작성하는 곳, 당신의 글을 적어보세요.">
+    <meta property="og:image" content="images/logo.png">
+
+    <link rel="stylesheet" href="style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!--    <script src="basic.js"></script>-->
+    <script type="application/javascript">
+
+        //수정하려는 데이터 불러오기 id를 알아야 되겠네 글보기처럼
+        const url = new URL(window.location.href);
+        const id = url.searchParams.get('id');
+        $.ajax({
+            type: 'GET',
+            url: `/board/${id}`,
+            success: function (respense){
+                console.log(respense);
+                // var content = `${respense.content}`;
+                // content = content.replace(/(?:\r\n|\r|\n)/g, '<br/>'); //br태그가 보임
+                let html = `<label for="title">제목</label>
+                            <input type="text" id="title" name="title" value="${respense.title}"
+                                style="width:485px; height:20px; font-size:15px;">
+                            <br><br>
+
+                            <label for="name">이름</label>
+                            <input type="text" id="name" name="name" value="${respense.name}"
+                                style="width:100px; height:20px; font-size:13px;">
+                            <br><br>
+
+                            <label for="content">내용</label>
+                            <textarea id="content" name="content" rows="10" cols="65" style="white-space:pre;">${respense.content}</textarea>`;
+                $('#post').append(html);
+            }
+
+        })
+
+
+        function edit(){
+            let title = $('#title').val()
+            let name = $('#name').val()
+            let content = $('#content').val()
+
+            if (title.trim().length === 0){
+                alert("제목을 입력해주세요")
+                $('#title').focus();
+                // $('#title').val("제목은 필수!");
+            }else if(name.trim().length === 0){
+                alert("이름을 입력해주세요")
+            }else if(content.trim().length === 0){
+                alert("내용을 입력해주세요요")
+            }else{
+                let data = {
+                    "title": title,
+                    "name": name,
+                    "content": content
+                }
+                $.ajax({
+                    type: 'PUT',
+                    url: `/board/${id}`,
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    success: function (response){
+                        console.log(response)
+                        alert("수정되었습니다.")
+                        // window.location.href = "/"
+                        window.location.href = "/viewPost?id="+id;
+                    }
+
+
+                })
+            }
+
+        }
+        function cancel(){
+            location.href = "/";
+        }
+    </script>
+
+    <title>글 수정하기</title>
+</head>
+<body>
+<div class="header">
+    온:Own 로그
+</div>
+<div class="nav">
+    <div class="nav-see active">
+        온로그 수정하기
+    </div>
+</div>
+<div id="see-area">
+    <!--    <form action="/board" method="post">-->
+    <div id="list-container">
+
+        <div class="post" id="post">
+<!--            <label for="title">제목</label>-->
+<!--            <input type="text" id="title" name="title" style="width:485px;height:20px;font-size:15px;">-->
+<!--            <br><br>-->
+
+<!--            <label for="name">이름</label>-->
+<!--            <input type="text" id="name" name="name" style="width:100px;height:20px;font-size:13px;">-->
+<!--            <br><br>-->
+
+<!--            <label for="content">내용</label>-->
+<!--            <textarea id="content" name="content" rows="10" cols="65">It was a dark and stormy night...</textarea>-->
+        </div>
+
+    </div>
+    <button class="write" onclick="edit()">수정하기</button>
+    <button class="cancel" onclick="cancel()">취소</button>
+    <!--    </form>-->
+</div>
+</body>
+</html>
