@@ -31,4 +31,15 @@ public class PageController {
     public String edit(@RequestParam Long id) {
         return "edit.html?id="+id;
     }
+
+    @GetMapping("/login")
+    public String login() {
+        return "login.html";
+    }
+
+    @GetMapping("/signup")
+    public String signup() {
+        return "signup.html";
+    }
 }
+
